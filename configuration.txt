@@ -1,0 +1,55 @@
+SQL> select * from tab;
+
+TNAME                          TABTYPE  CLUSTERID                               
+------------------------------ ------- ----------                               
+CURRENTACTIVITY                VIEW                                             
+INACTIVEUSERS                  VIEW                                             
+USERACTIVITY                   TABLE                                            
+
+SQL> desc useractivity
+ Name                                      Null?    Type
+ ----------------------------------------- -------- ----------------------------
+ USERNAME                                           VARCHAR2(10)
+ MACHINE                                            VARCHAR2(15)
+ EVENT                                              TIMESTAMP(6)
+ ACTIVE                                             NUMBER(1)
+
+SQL> SET LONG 5000
+SQL> col text FOR a80
+SQL> set pagesize 120
+SQL> select text from user_views where view_name='INACTIVEUSERS';
+
+TEXT                                                                            
+--------------------------------------------------------------------------------
+select	ua1.username||'@'||ua1.machine student,                                  
+	TO_CHAR(ua1.event, 'HH24:MI:SS') event                                        
+from	useractivity ua1                                                           
+where	ua1.active=0                                                              
+and	ua1.event=                                                                 
+(                                                                               
+        select max(ua2.event) event                                             
+        from useractivity ua2                                                   
+        where ua1.username=ua2.username                                         
+        and ua1.machine=ua2.machine                                             
+	and to_char(ua2.event,'DD-MON-YYYY')=to_char(systimestamp,'DD-MON-YYYY')      
+        group by ua2.username,ua2.machine                                       
+)                                                                               
+order by ua1.event asc                                                          
+                                                                                
+
+SQL> select text from user_views where view_name='CURRENTACTIVITY';
+
+TEXT                                                                            
+--------------------------------------------------------------------------------
+select 	ua1.username||'@'||ua1.machine student,                                  
+	ua1.event,                                                                      
+	ua1.active                                                                      
+from	useractivity ua1                                                           
+where	ua1.event=                                                                
+(                                                                               
+	select max(ua2.event) event                                                     
+	from useractivity ua2                                                           
+	where ua1.username=ua2.username and ua1.machine=ua2.machine                     
+	group by ua2.username,ua2.machine                                               
+)                                                                               
+                                                                        
